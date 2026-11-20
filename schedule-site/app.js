@@ -77,7 +77,7 @@ function writeUrl() {
 function logo(id, name, small = false) {
   const t = teamBy.get(id);
   const cls = `logo${small ? ' sm' : ''}`;
-  if (t?.logo) return `<span class="${cls}"><img src="${esc(t.logo)}" alt="" loading="lazy"></span>`;
+  if (t?.logo) return `<span class="${cls}" style="--ring:${esc(t.color ?? '#e2e8f0')}"><img src="${esc(t.logo)}" alt="" loading="lazy"></span>`;
   return `<span class="${cls}" style="background:${esc(t?.color ?? '#e2e8f0')}" aria-hidden="true">${esc(initials(t?.name ?? name))}</span>`;
 }
 function pair(m, side) {

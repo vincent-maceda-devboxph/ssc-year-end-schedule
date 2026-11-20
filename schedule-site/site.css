@@ -83,8 +83,8 @@ body { -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transpa
 .pair.hit { background: var(--bs-success-bg-subtle); border-color: var(--bs-success-border-subtle); }
 .pair .names { font-weight: 700; font-size: 1.05rem; line-height: 1.25; overflow-wrap: anywhere; }
 .vs { text-align: center; font-size: .68rem; font-weight: 800; letter-spacing: .22em; color: var(--bs-secondary-color); margin: .15rem 0; }
-.logo { flex: none; width: 2.6rem; height: 2.6rem; border-radius: .8rem; display: grid; place-items: center; font-weight: 800; font-size: .85rem; color: #0f172a; border: 1px solid rgba(0, 0, 0, .1); overflow: hidden; background: #fff; }
-.logo img { width: 100%; height: 100%; object-fit: contain; }
+.logo { flex: none; width: 3.4rem; height: 3.4rem; border-radius: 1rem; display: grid; place-items: center; font-weight: 800; font-size: .85rem; color: #0f172a; border: 2px solid var(--ring, rgba(0, 0, 0, .1)); overflow: hidden; background: #fff; }
+.logo img { width: 100%; height: 100%; object-fit: contain; padding: 2px; }
 .logo.sm { width: 1.5rem; height: 1.5rem; border-radius: .45rem; font-size: .55rem; }
 mark { background: rgba(245, 158, 11, .35); color: inherit; border-radius: .25rem; padding: 0 .15rem; }
 
