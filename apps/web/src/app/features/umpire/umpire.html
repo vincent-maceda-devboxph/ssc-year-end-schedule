@@ -1,0 +1,190 @@
+@if (!ready()) {
+  <mat-progress-bar mode="indeterminate" />
+} @else if (!session() || !current()) {
+  <!-- ============ Sign in ============ -->
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-badge"><mat-icon>sports</mat-icon></div>
+      <h1>Umpire sign in</h1>
+      <p class="muted">Enter the 6-digit code for your court and your name. The code is on the court sheet or from the tournament desk.</p>
+      <form class="form" (ngSubmit)="login()">
+        <mat-form-field appearance="outline">
+          <mat-label>Court code</mat-label>
+          <input matInput class="code-input" [(ngModel)]="code" name="code" inputmode="numeric" pattern="\d{6}" maxlength="6" autocomplete="one-time-code" required />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Your name</mat-label>
+          <input matInput [(ngModel)]="name" name="name" maxlength="60" autocomplete="name" required />
+        </mat-form-field>
+        @if (loginError()) { <p class="error-text">{{ loginError() }}</p> }
+        <button mat-flat-button type="submit" [disabled]="loggingIn()">Start umpiring</button>
+      </form>
+    </div>
+  </div>
+} @else {
+  <!-- ============ Scoring ============ -->
+  @let cur = current()!;
+  @let m = match();
+  <div class="umpire">
+    <header class="bar">
+      <div class="who">
+        <strong>{{ cur.court.name }}</strong>
+        <span class="muted small">{{ session()!.name }}</span>
+      </div>
+      <bt-connection />
+      <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="More"><mat-icon>more_vert</mat-icon></button>
+      <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="flipped.set(!flipped())"><mat-icon>swap_vert</mat-icon>Swap sides on screen</button>
+        <button mat-menu-item (click)="reload()"><mat-icon>refresh</mat-icon>Refresh</button>
+        @if (m && can('pause') && inControl()) {
+          <button mat-menu-item (click)="send('pause')"><mat-icon>pause</mat-icon>Pause match</button>
+        }
+        @if (m && can('retire') && inControl()) {
+          <button mat-menu-item (click)="confirmSend('retire', m.entryA.name + ' retires? ' + m.entryB.name + ' wins.', 'A')">
+            <mat-icon>personal_injury</mat-icon>{{ m.entryA.name }} retires
+          </button>
+          <button mat-menu-item (click)="confirmSend('retire', m.entryB.name + ' retires? ' + m.entryA.name + ' wins.', 'B')">
+            <mat-icon>personal_injury</mat-icon>{{ m.entryB.name }} retires
+          </button>
+        }
+        <button mat-menu-item (click)="logout()"><mat-icon>logout</mat-icon>Sign out</button>
+      </mat-menu>
+    </header>
+
+    @if (busy()) { <mat-progress-bar mode="indeterminate" class="busy" /> } @else { <div class="busy"></div> }
+    @if (message(); as msg) { <div class="msg" [class.err]="msg.kind === 'error'" role="alert">{{ msg.text }}</div> }
+
+    @if (!m) {
+      <div class="empty">
+        <mat-icon>hourglass_empty</mat-icon>
+        <p>No match assigned to this court yet.</p>
+        <p class="muted small">This screen updates automatically.</p>
+      </div>
+    } @else {
+      <div class="info">
+        <span>{{ m.gameNumber ? 'Game ' + m.gameNumber : '#' + m.matchNumber }}{{ m.plannedStart ? ' · ' + time(m.plannedStart) : '' }} · {{ m.bracket }}</span>
+        <span [class]="'chip ' + (m.status === 'in_progress' ? 'live' : m.status)">{{ labels[m.status] }}</span>
+      </div>
+
+      @if (!inControl() && !isFinal(m.status)) {
+        <div class="control">
+          <span><strong>{{ m.umpireName }}</strong> is scoring this match. You are watching only.</span>
+          <button mat-stroked-button (click)="takeOver()">Take over</button>
+        </div>
+      }
+
+      @switch (phase()) {
+        @case ('prestart') {
+          <div class="prestart">
+            @if (m.status === 'called') { <div class="called" role="status"><mat-icon>campaign</mat-icon> You are called to this court. Start when the players are ready.</div> }
+            <div class="vs"><strong>{{ m.entryA.name }}</strong><span class="muted">vs</span><strong>{{ m.entryB.name }}</strong></div>
+            <p class="muted small">
+              {{ m.scoring.gamesToWin === 1 ? 'Single game' : 'Best of ' + (m.scoring.gamesToWin * 2 - 1) }} to {{ m.scoring.pointsToWin }}{{ m.scoring.cap ? ', cap ' + m.scoring.cap : '' }}
+            </p>
+            <button mat-flat-button class="big" [disabled]="!canScore()" (click)="send('start')">Start match</button>
+          </div>
+        }
+        @case ('paused') {
+          <div class="prestart">
+            <p>Match paused at {{ formatGames(m.score.games) || '0-0' }}</p>
+            <button mat-flat-button class="big" [disabled]="!canScore()" (click)="send('resume')">Resume</button>
+          </div>
+        }
+        @default {
+          @if (previousGames().length) {
+            <div class="prev">Games: {{ formatGames(previousGames()) }} @if (m.score.isDecider && !m.winner) { <span class="chip paused">Decider</span> }</div>
+          }
+          @if (notice()) { <div class="notice">{{ notice() }}</div> }
+
+          @if (serving(); as sv) {
+            @if (needsServer() || pick()) {
+              @let c = choice()!;
+              <div class="serve-card">
+                <strong>Who serves first?</strong>
+                <div class="srow"><span class="lbl">Serving side</span>
+                  @for (s of ['A', 'B']; track s) {
+                    <button type="button" class="opt" [class.on]="c.side === s" (click)="choose({ side: $any(s) })">{{ s === 'A' ? m.entryA.name : m.entryB.name }}</button>
+                  }
+                </div>
+                <div class="srow"><span class="lbl">Server</span>
+                  @for (i of [0, 1]; track i) {
+                    <button type="button" class="opt" [class.on]="c.server === i" (click)="choose({ server: $any(i) })">{{ sv.players[c.side][$any(i)] }}</button>
+                  }
+                </div>
+                <div class="srow"><span class="lbl">Receiver</span>
+                  @for (i of [0, 1]; track i) {
+                    <button type="button" class="opt" [class.on]="c.receiver === i" (click)="choose({ receiver: $any(i) })">{{ sv.players[other(c.side)][$any(i)] }}</button>
+                  }
+                </div>
+                <div class="row">
+                  <button mat-flat-button class="grow" [disabled]="!canScore()" (click)="confirmServers()">Confirm server</button>
+                  @if (pick()) { <button mat-button type="button" (click)="pick.set(null)">Cancel</button> }
+                </div>
+              </div>
+            } @else if (m.status === 'in_progress') {
+              <div class="serve-line" role="status">
+                <mat-icon>sports_tennis</mat-icon>
+                <span><strong>{{ sv.serverName }}</strong> serves ({{ courtOf(sv.side, sv.server) === 'R' ? 'right' : 'left' }} court) to <strong>{{ sv.receiverName }}</strong></span>
+                <button mat-button type="button" (click)="openPicker()" [disabled]="!canScore()">Change</button>
+              </div>
+            }
+          }
+
+          <div class="pads">
+            @for (side of sides(); track side) {
+              <button class="pad" [class.a]="side === 'A'" [class.b]="side === 'B'"
+                      [disabled]="!canScore() || !can('point')" (click)="point(side)"
+                      [attr.aria-label]="'Point to ' + nameOf(side)">
+                <span class="pname">
+                  @if (serving(); as sv) {
+                    <span class="players">
+                      @for (i of [0, 1]; track i) {
+                        <span class="pl" [class.srv]="sv.side === side && sv.server === i" [class.rcv]="sv.side !== side && sv.receiver === i">
+                          @if (sv.side === side && sv.server === i) { <mat-icon class="shuttle">sports_tennis</mat-icon> }
+                          {{ sv.players[side][$any(i)] }}<small>{{ courtOf(side, $any(i)) }}</small>
+                        </span>
+                      }
+                    </span>
+                  } @else {
+                    @if (m.score.servingSide === side && m.status === 'in_progress') { <mat-icon class="shuttle">sports_tennis</mat-icon> }
+                    {{ nameOf(side) }}
+                  }
+                </span>
+                <span class="pscore">{{ scoreOf(side) }}</span>
+                <span class="pgames">Games {{ gamesOf(side) }}</span>
+              </button>
+            }
+          </div>
+
+          @if (m.status === 'awaiting_confirmation') {
+            <div class="confirm">
+              <p><strong>{{ m.score.winner === 'A' ? m.entryA.name : m.entryB.name }}</strong> win {{ formatGames(m.score.games) }}</p>
+              <p class="muted small">Check the score with the players, then submit. This makes the result official.</p>
+              <div class="row">
+                <button mat-stroked-button [disabled]="!canScore()" (click)="send('undo')"><mat-icon>undo</mat-icon> Undo last point</button>
+                <button mat-flat-button class="grow" [disabled]="!canScore()" (click)="send('submit')">Submit result</button>
+              </div>
+            </div>
+          } @else if (isFinal(m.status)) {
+            <div class="confirm">
+              <p><strong>{{ labels[m.status] }}</strong>{{ m.winner ? ' – ' + (m.winner === 'A' ? m.entryA.name : m.entryB.name) + ' win' : '' }}</p>
+              <button mat-flat-button (click)="reload()">Next match</button>
+            </div>
+          } @else {
+            <div class="row tools">
+              <button mat-stroked-button class="grow" [disabled]="!canScore() || !can('undo') || !m.score.pointsPlayed" (click)="send('undo')">
+                <mat-icon>undo</mat-icon> Undo
+              </button>
+            </div>
+          }
+        }
+      }
+
+      @if (cur.upcoming.length) {
+        <div class="upcoming muted small">
+          Next on this court: {{ cur.upcoming[0]!.plannedStart ? time(cur.upcoming[0]!.plannedStart) + ' · ' : '' }}{{ cur.upcoming[0]!.entryA.name }} vs {{ cur.upcoming[0]!.entryB.name }}
+        </div>
+      }
+    }
+  </div>
+}

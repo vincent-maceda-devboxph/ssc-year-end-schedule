@@ -1,0 +1,29 @@
+{
+  "name": "badminton-tournament",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first badminton tournament management: admin, umpire scoring, live scoreboard.",
+  "workspaces": [
+    "packages/shared",
+    "apps/api",
+    "apps/web"
+  ],
+  "scripts": {
+    "build:shared": "npm run build -w @bt/shared",
+    "build": "npm run build:shared && npm run build -w @bt/api && npm run build -w web",
+    "dev:api": "npm run build:shared && npm run dev -w @bt/api",
+    "dev:web": "npm run start -w web",
+    "start": "npm run start -w @bt/api",
+    "test": "npm run build:shared && npm run test -w @bt/shared && npm run test -w @bt/api",
+    "create-admin": "npm run create-admin -w @bt/api --",
+    "doctor": "node scripts/doctor.mjs",
+    "e2e": "npm run build && playwright test",
+    "export:site": "node scripts/export-schedule-site.mjs"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1"
+  }
+}

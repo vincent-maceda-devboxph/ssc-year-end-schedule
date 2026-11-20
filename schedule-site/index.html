@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <title>Match schedule</title>
+  <meta name="description" content="Find your match times and courts. Search by name; filter by division, level, team and court." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%230f766e'/%3E%3Ctext x='32' y='43' font-size='34' text-anchor='middle'%3E%F0%9F%8F%B8%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="vendor/bootstrap.min.css" />
+  <link rel="stylesheet" href="vendor/bootstrap-icons.min.css" />
+  <link rel="stylesheet" href="site.css" />
+  <script>
+    // Apply the saved or system theme before first paint (no flash).
+    try {
+      var t = localStorage.getItem('sched.theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-bs-theme', t);
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center">
+        <span class="badge rounded-pill glass fs-6 fw-semibold px-3 py-2"><i class="bi bi-trophy-fill me-2"></i>Match schedule</span>
+        <button id="theme" type="button" class="btn glass rounded-circle p-0 d-grid" style="width:2.6rem;height:2.6rem;place-items:center" aria-label="Switch light and dark mode" title="Light / dark">
+          <i class="bi bi-moon-stars-fill"></i>
+        </button>
+      </div>
+      <h1 id="title" class="display-4 fw-bolder mt-4 mb-2">Match schedule</h1>
+      <p id="meta" class="d-flex flex-wrap gap-2 gap-md-4 mb-3 opacity-75 fs-6"></p>
+      <div id="stats" class="d-flex flex-wrap gap-2 gap-md-3"></div>
+    </div>
+  </header>
+
+  <div class="searchbar">
+    <div class="container">
+      <div class="searchbox" role="search">
+        <div class="input-group flex-nowrap align-items-center">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <label for="q" class="visually-hidden">Search by player, team, level or court</label>
+          <input id="q" class="form-control" type="search" placeholder="Search your name or team" autocomplete="off" autocapitalize="none" spellcheck="false" enterkeyhint="search" />
+          <button id="clear" type="button" class="btn-clear" aria-label="Clear search"><i class="bi bi-x-lg"></i></button>
+          <button id="open-filters" type="button" class="btn btn-primary btn-filters d-inline-flex align-items-center gap-2">
+            <i class="bi bi-sliders2"></i><span class="d-none d-sm-inline">Filters</span>
+            <span id="fcount" class="badge rounded-pill text-bg-light" hidden>0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="container pb-4">
+    <div class="tools d-flex flex-wrap align-items-center gap-3 mt-4 mb-2">
+      <div id="chips" class="d-flex flex-wrap gap-2 flex-grow-1" aria-label="Active filters"></div>
+      <div class="btn-group shadow-sm" role="group" aria-label="View">
+        <button type="button" id="v-time" class="btn btn-outline-primary fw-semibold"><i class="bi bi-clock-history me-1"></i>Timeline</button>
+        <button type="button" id="v-court" class="btn btn-outline-primary fw-semibold"><i class="bi bi-grid-3x3-gap me-1"></i>By court</button>
+      </div>
+    </div>
+    <div id="summary" class="d-flex flex-wrap align-items-center gap-3 text-body-secondary mb-3" aria-live="polite"></div>
+    <div id="results"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div>
+  </main>
+
+  <footer class="text-center text-body-secondary small py-5">
+    <div class="container">
+      <p id="stamp" class="mb-1"></p>
+      <p class="mb-0">Times can change. Please check with the organisers on the day.</p>
+    </div>
+  </footer>
+
+  <!-- Filters: a bottom sheet (Bootstrap offcanvas) -->
+  <div id="sheet" class="offcanvas offcanvas-bottom" tabindex="-1" aria-labelledby="sheet-title">
+    <div class="offcanvas-header pb-2">
+      <h2 id="sheet-title" class="offcanvas-title h4 fw-bold"><i class="bi bi-sliders2 me-2 text-primary"></i>Filters</h2>
+      <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    </div>
+    <div id="groups" class="offcanvas-body pt-2 d-grid gap-4 align-content-start"></div>
+    <div class="p-3 border-top d-flex gap-2" style="padding-bottom:calc(1rem + env(safe-area-inset-bottom))!important">
+      <button id="reset" type="button" class="btn btn-outline-secondary rounded-pill flex-fill py-2 fw-semibold">Clear all</button>
+      <button id="apply" type="button" class="btn btn-primary rounded-pill flex-fill py-2 fw-bold" data-bs-dismiss="offcanvas">Show matches</button>
+    </div>
+  </div>
+
+  <script src="vendor/bootstrap.bundle.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
